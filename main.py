@@ -158,6 +158,22 @@ class MazeGUI:
         ttk.Button(self.control_panel, text="A*", command=lambda: self.run_algorithm(a_star)).pack(side=tk.LEFT, padx=5)
         ttk.Button(self.control_panel, text="Generate Maze", command=self.reset_maze).pack(side=tk.LEFT, padx=5)
 
+        # Maze size slider
+        ttk.Label(self.control_panel, text="Maze Size:").pack(side=tk.LEFT, padx=5)
+        self.size_slider = ttk.Scale(self.control_panel, from_=10, to=50, orient=tk.HORIZONTAL, command=self.update_maze_size)
+        self.size_slider.set(self.maze_size)
+        self.size_slider.pack(side=tk.LEFT, padx=5)
+
+        # Ranking section
+        self.ranking_label = ttk.Label(self.master, text="Ranking by Cost:", anchor="e", justify="left")
+        self.ranking_label.pack(side=tk.TOP, anchor=tk.E, padx=10)
+
+        self.rankings = {}
+
+    def update_maze_size(self, value):
+        self.maze_size = int(float(value))
+        self.reset_maze()
+
     def on_resize(self, event):
         self.update_cell_size()
         self.draw_maze()
@@ -170,7 +186,6 @@ class MazeGUI:
                              min(canvas_width // self.maze_size, canvas_height // self.maze_size))
 
     def reset_maze(self):
-        self.maze_size = 20
         self.maze = self.generate_maze()
         self.start = (0, 0)
         self.exits = [(self.maze_size - 1, self.maze_size - 1)]
@@ -217,8 +232,15 @@ class MazeGUI:
 
     def run_algorithm(self, algorithm):
         self.canvas.delete("path")
+
+        # Run the algorithm and get the path
         path = algorithm(self.maze, self.start, self.exits)
+
         if path:
+            # Calculate path cost
+            path_cost = len(path) - 1  # Subtract 1 because cost is the number of steps
+
+            # Draw the path on the maze
             for i in range(1, len(path)):
                 x1, y1 = path[i - 1]
                 x2, y2 = path[i]
@@ -230,6 +252,26 @@ class MazeGUI:
                     fill="blue", width=max(1, self.cell_size // 10),
                     tags="path"
                 )
+
+            # Update rankings based on cost
+            self.update_ranking(algorithm.__name__, path_cost)
+        else:
+            # Handle cases where no path is found
+            self.update_ranking(algorithm.__name__, float('inf'))  # Infinite cost for no solution
+
+    def update_ranking(self, algo_name, path_cost):
+        # Store the cost for the algorithm
+        self.rankings[algo_name] = path_cost
+
+        # Sort rankings by cost
+        sorted_rankings = sorted(self.rankings.items(), key=lambda x: x[1])
+
+        # Update the ranking display
+        self.ranking_label.config(
+            text="Ranking by Cost:\n" +
+                 "\n".join(f"{name}: {('No Path' if cost == float('inf') else cost)} steps"
+                           for name, cost in sorted_rankings)
+        )
 
 if __name__ == "__main__":
     root = tk.Tk()
