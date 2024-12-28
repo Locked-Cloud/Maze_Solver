@@ -258,7 +258,6 @@ class MazeGUI:
             ("Change Start", self.toggle_start_change),
             ("Generate Maze", self.reset_maze),
             ("Toggle Dark Mode", self.toggle_dark_mode),
-            ("Clear Stats", self.clear_stats),
             ("Reset Graphs", self.reset_graphs)
         ]
         
@@ -577,29 +576,6 @@ class MazeGUI:
             self.canvas.configure(bg="white", highlightbackground="#3498db")
         
         self.draw_maze()
-
-    def clear_stats(self):
-        """Clear the performance stats"""
-        for algo in self.performance_stats:
-            self.performance_stats[algo]['times'].clear()
-            self.performance_stats[algo]['paths'].clear()
-        
-        # Clear the performance graphs
-        self.ax1.clear()
-        self.ax2.clear()
-        self.ax1.set_title('Algorithm Performance Over Time', pad=10, fontsize=10, fontweight='bold')
-        self.ax1.set_ylabel('Execution Time (seconds)', fontsize=8)
-        self.ax1.set_xlabel('Iteration', fontsize=8)
-        self.ax1.grid(True, linestyle='--', alpha=0.7)
-        
-        self.ax2.set_title('Path Length Comparison', pad=10, fontsize=10, fontweight='bold')
-        self.ax2.set_ylabel('Path Length (steps)', fontsize=8)
-        self.ax2.set_xlabel('Iteration', fontsize=8)
-        self.ax2.grid(True, linestyle='--', alpha=0.7)
-        
-        # Adjust layout and redraw
-        self.fig.tight_layout(pad=3.0)
-        self.fig.canvas.draw()
 
     def toggle_start_change(self):
         """Toggle the start position change mode"""
