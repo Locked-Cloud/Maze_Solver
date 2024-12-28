@@ -6,6 +6,7 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import time
+from tkinter import messagebox  # Import messagebox for notifications
 
 # Function to reconstruct the path from start to goal
 def reconstruct_path(came_from, start, goal):
@@ -479,7 +480,8 @@ class MazeGUI:
             print(f"Algorithm: {algo_name}, Execution Time: {execution_time}, Path Length: {path_length}")
         else:
             # Handle cases where no path is found
-            print(f"No path found for {algo_name} algorithm.")
+            print(f"No path found for {algorithm.__name__} algorithm.")
+            messagebox.showinfo("No Solution", f"No path found for {algorithm.__name__} algorithm.")
 
     def draw_path(self, path):
         """Draw the path on the maze"""
