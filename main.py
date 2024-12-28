@@ -77,8 +77,8 @@ def bfs(maze, start, exits):
 
 # Greedy Best-First Search algorithm
 def greedy(maze, start, exits):
-    def heuristic(pos, goal):
-        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])  # Manhattan distance
+    def heuristic(pos, exits):
+        return min(abs(pos[0] - exit[0]) + abs(pos[1] - exit[1]) for exit in exits)  # Minimum distance to any exit
 
     priority_queue = []  # Priority queue for greedy search
     heapq.heappush(priority_queue, (0, start))  # Start with the initial position
@@ -102,7 +102,7 @@ def greedy(maze, start, exits):
             if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
                 next_pos = (nx, ny)
                 if next_pos not in visited:
-                    priority = heuristic(next_pos, exits[0])  # Calculate priority
+                    priority = heuristic(next_pos, exits)  # Calculate priority
                     heapq.heappush(priority_queue, (priority, next_pos))  # Add to queue
                     came_from[next_pos] = current  # Record the path
 
