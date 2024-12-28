@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import time
 
+# Function to reconstruct the path from start to goal
 def reconstruct_path(came_from, start, goal):
     path = []
     current = goal
@@ -14,110 +15,118 @@ def reconstruct_path(came_from, start, goal):
         path.append(current)
         current = came_from[current]
     path.append(start)
-    path.reverse()
+    path.reverse()  # Reverse the path to get it from start to goal
     return path
 
+# Depth-First Search algorithm
 def dfs(maze, start, exits):
-    stack = [start]
-    visited = set()
-    came_from = {}
+    stack = [start]  # Stack for DFS
+    visited = set()  # Set to keep track of visited nodes
+    came_from = {}  # To reconstruct the path
 
     while stack:
-        current = stack.pop()
+        current = stack.pop()  # Get the last added position
 
-        if current in exits:
+        if current in exits:  # If we reached an exit
             return reconstruct_path(came_from, start, current)
 
-        if current in visited:
+        if current in visited:  # Skip if already visited
             continue
 
-        visited.add(current)
+        visited.add(current)  # Mark current as visited
         x, y = current
+        # Check all four possible directions
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
                 next_pos = (nx, ny)
                 if next_pos not in visited:
-                    stack.append(next_pos)
-                    came_from[next_pos] = current
+                    stack.append(next_pos)  # Add to stack
+                    came_from[next_pos] = current  # Record the path
 
-    return None
+    return None  # No path found
 
+# Breadth-First Search algorithm
 def bfs(maze, start, exits):
-    queue = [start]
-    visited = set()
-    came_from = {}
+    queue = [start]  # Queue for BFS
+    visited = set()  # Set to keep track of visited nodes
+    came_from = {}  # To reconstruct the path
 
     while queue:
-        current = queue.pop(0)
+        current = queue.pop(0)  # Get the first position
 
-        if current in exits:
+        if current in exits:  # If we reached an exit
             return reconstruct_path(came_from, start, current)
 
-        if current in visited:
+        if current in visited:  # Skip if already visited
             continue
 
-        visited.add(current)
+        visited.add(current)  # Mark current as visited
         x, y = current
+        # Check all four possible directions
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
                 next_pos = (nx, ny)
                 if next_pos not in visited:
-                    queue.append(next_pos)
-                    came_from[next_pos] = current
+                    queue.append(next_pos)  # Add to queue
+                    came_from[next_pos] = current  # Record the path
 
-    return None
+    return None  # No path found
 
+# Greedy Best-First Search algorithm
 def greedy(maze, start, exits):
     def heuristic(pos, goal):
-        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])  # Manhattan distance
 
-    priority_queue = []
-    heapq.heappush(priority_queue, (0, start))
+    priority_queue = []  # Priority queue for greedy search
+    heapq.heappush(priority_queue, (0, start))  # Start with the initial position
     came_from = {}
     visited = set()
 
     while priority_queue:
-        _, current = heapq.heappop(priority_queue)
+        _, current = heapq.heappop(priority_queue)  # Get the position with the lowest cost
 
-        if current in exits:
+        if current in exits:  # If we reached an exit
             return reconstruct_path(came_from, start, current)
 
-        if current in visited:
+        if current in visited:  # Skip if already visited
             continue
 
-        visited.add(current)
+        visited.add(current)  # Mark current as visited
         x, y = current
+        # Check all four possible directions
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
                 next_pos = (nx, ny)
                 if next_pos not in visited:
-                    priority = heuristic(next_pos, exits[0])
-                    heapq.heappush(priority_queue, (priority, next_pos))
-                    came_from[next_pos] = current
+                    priority = heuristic(next_pos, exits[0])  # Calculate priority
+                    heapq.heappush(priority_queue, (priority, next_pos))  # Add to queue
+                    came_from[next_pos] = current  # Record the path
 
-    return None
+    return None  # No path found
 
+# A* Search algorithm
 def a_star(maze, start, exits):
     def heuristic(pos, goal):
-        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])  # Manhattan distance
 
-    priority_queue = []
-    heapq.heappush(priority_queue, (0, start))
+    priority_queue = []  # Priority queue for A*
+    heapq.heappush(priority_queue, (0, start))  # Start with the initial position
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
 
     while priority_queue:
-        _, current = heapq.heappop(priority_queue)
+        _, current = heapq.heappop(priority_queue)  # Get the position with the lowest cost
 
-        if current in exits:
+        if current in exits:  # If we reached an exit
             return reconstruct_path(came_from, start, current)
 
         x, y = current
+        # Check all four possible directions
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
@@ -125,12 +134,13 @@ def a_star(maze, start, exits):
                 next_pos = (nx, ny)
                 if next_pos not in cost_so_far or new_cost < cost_so_far[next_pos]:
                     cost_so_far[next_pos] = new_cost
-                    priority = new_cost + heuristic(next_pos, exits[0])
-                    heapq.heappush(priority_queue, (priority, next_pos))
-                    came_from[next_pos] = current
+                    priority = new_cost + heuristic(next_pos, exits[0])  # Calculate priority
+                    heapq.heappush(priority_queue, (priority, next_pos))  # Add to queue
+                    came_from[next_pos] = current  # Record the path
 
-    return None
+    return None  # No path found
 
+# GUI Class for the Maze Pathfinding Application
 class MazeGUI:
     def __init__(self, master):
         self.master = master
@@ -140,14 +150,15 @@ class MazeGUI:
         self.max_canvas_size = 800
         self.dark_mode = False
         self.wall_density = 0.3
-        self.num_exits = 3  # Add number of exits configuration
-        self.changing_start = False  # Add flag for start position change mode
+        self.num_exits = 3  # Number of exits in the maze
+        self.changing_start = False  # Flag for changing start position
         
-        # Add variables to store last path and algorithm
+        # Variables to store last path and algorithm
         self.last_path = None
         self.last_algorithm = None
-        self.current_path = None  # Add this to track current path
+        self.current_path = None  # Track current path
 
+        # Performance statistics for each algorithm
         self.performance_stats = {
             'dfs': {'times': [], 'paths': []},
             'bfs': {'times': [], 'paths': []},
@@ -161,13 +172,13 @@ class MazeGUI:
 
         self.master.resizable(True, True)
         
-        # Setup styles first
+        # Setup styles for the GUI
         self.setup_styles()
         
-        # Create widgets before resetting maze
+        # Create widgets for the GUI
         self.create_widgets()
         
-        # Now reset maze
+        # Reset the maze to start
         self.reset_maze()  # Ensure this is called after create_widgets
         
         self.master.bind('<Configure>', self.on_resize)
