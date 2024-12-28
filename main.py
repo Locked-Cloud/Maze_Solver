@@ -143,9 +143,6 @@ class MazeGUI:
         self.num_exits = 3  # Add number of exits configuration
         self.changing_start = False  # Add flag for start position change mode
         
-        # Initialize rankings dictionary
-        self.rankings = {}
-        
         # Add variables to store last path and algorithm
         self.last_path = None
         self.last_algorithm = None
@@ -171,7 +168,7 @@ class MazeGUI:
         self.create_widgets()
         
         # Now reset maze
-        self.reset_maze()
+        self.reset_maze()  # Ensure this is called after create_widgets
         
         self.master.bind('<Configure>', self.on_resize)
 
@@ -281,13 +278,6 @@ class MazeGUI:
         # Stats frame
         self.stats_frame = ttk.Frame(self.right_frame, style='Custom.TFrame')
         self.stats_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Ranking label with better styling
-        self.ranking_label = ttk.Label(self.stats_frame,
-                                     text="Ranking by Cost:",
-                                     style='Custom.TLabel',
-                                     justify=tk.LEFT)
-        self.ranking_label.pack(anchor=tk.W, padx=10, pady=5)
 
         # Performance graphs
         self.canvas_stats = FigureCanvasTkAgg(self.fig, master=self.stats_frame)
@@ -472,15 +462,14 @@ class MazeGUI:
             
             # Draw the path immediately
             self.draw_path(path)
-            # Update rankings
-            self.update_ranking(algo_name, path_length, execution_time)
             # Update performance graphs
             self.update_performance_graphs()
             # Ensure the canvas updates
             self.canvas.update()
+            print(f"Algorithm: {algo_name}, Execution Time: {execution_time}, Path Length: {path_length}")
         else:
             # Handle cases where no path is found
-            self.update_ranking(algorithm.__name__, float('inf'), execution_time)
+            print(f"No path found for {algo_name} algorithm.")
 
     def draw_path(self, path):
         """Draw the path on the maze"""
@@ -498,32 +487,17 @@ class MazeGUI:
                 tags="path"
             )
 
-    def update_ranking(self, algo_name, path_cost, execution_time):
-        # Store the cost for the algorithm
-        self.rankings[algo_name] = (path_cost, execution_time)
-
-        # Sort rankings by cost
-        sorted_rankings = sorted(self.rankings.items(), key=lambda x: x[1][0])
-
-        # Update the ranking display
-        self.ranking_label.config(
-            text="Ranking by Cost:\n" +
-                 "\n".join(f"{name}: {('No Path' if cost[0] == float('inf') else cost[0])} steps, "
-                          f"{cost[1]:.4f} seconds"
-                          for name, cost in sorted_rankings)
-        )
-
     def update_performance_graphs(self):
         # Clear previous plots
         self.ax1.clear()
         self.ax2.clear()
 
-        # Set style - using a built-in style instead of seaborn
+        # Set style
         plt.style.use('bmh')  # Alternative built-in style
         colors = {'dfs': '#FF9999', 'bfs': '#66B2FF', 
                   'greedy': '#99FF99', 'a_star': '#FFCC99'}
 
-        # Plot execution times with improvements
+        # Plot execution times
         for algo in self.performance_stats:
             times = self.performance_stats[algo]['times']
             if times:
@@ -531,31 +505,20 @@ class MazeGUI:
                 self.ax1.plot(times, label=algo, color=colors[algo], 
                              marker='o', markersize=4, linewidth=2, alpha=0.7)
                 
-                # Add trend line
-                if len(times) > 1:
-                    z = np.polyfit(range(len(times)), times, 1)
-                    p = np.poly1d(z)
-                    self.ax1.plot(range(len(times)), p(range(len(times))), 
-                                '--', color=colors[algo], alpha=0.3)
+                # Add average execution time line
+                avg_time = np.mean(times)
+                self.ax1.axhline(y=avg_time, color=colors[algo], linestyle='--', alpha=0.5)
+                self.ax1.text(len(times)-1, avg_time, 
+                             f'Avg: {avg_time:.2f}s', 
+                             fontsize=8, color=colors[algo], ha='right')
 
-        self.ax1.set_title('Algorithm Performance Over Time', pad=10, fontsize=10, fontweight='bold')
-        self.ax1.set_ylabel('Execution Time (seconds)', fontsize=8)
-        self.ax1.set_xlabel('Iteration', fontsize=8)
+        self.ax1.set_title('Algorithm Performance Over Time', pad=10, fontsize=12, fontweight='bold')
+        self.ax1.set_ylabel('Execution Time (seconds)', fontsize=10)
+        self.ax1.set_xlabel('Iteration', fontsize=10)
         self.ax1.grid(True, linestyle='--', alpha=0.7)
         self.ax1.legend(fontsize=8, loc='upper left')
 
-        # Add average execution time annotations
-        for algo in self.performance_stats:
-            times = self.performance_stats[algo]['times']
-            if times:
-                avg_time = np.mean(times)
-                self.ax1.axhline(y=avg_time, color=colors[algo], 
-                               linestyle=':', alpha=0.3)
-                self.ax1.text(len(times)-1, avg_time, 
-                             f'Avg {algo}: {avg_time:.4f}s', 
-                             fontsize=7, alpha=0.7)
-
-        # Plot path lengths with improvements
+        # Plot path lengths
         for algo in self.performance_stats:
             paths = self.performance_stats[algo]['paths']
             if paths:
@@ -563,48 +526,21 @@ class MazeGUI:
                 self.ax2.plot(paths, label=algo, color=colors[algo], 
                              marker='o', markersize=4, linewidth=2, alpha=0.7)
                 
-                # Calculate and plot moving average
-                if len(paths) > 2:
-                    window_size = min(3, len(paths))
-                    moving_avg = np.convolve(paths, np.ones(window_size)/window_size, mode='valid')
-                    self.ax2.plot(range(window_size-1, len(paths)), moving_avg, 
-                                '--', color=colors[algo], alpha=0.3, 
-                                label=f'{algo} trend')
+                # Add average path length line
+                avg_path = np.mean(paths)
+                self.ax2.axhline(y=avg_path, color=colors[algo], linestyle='--', alpha=0.5)
+                self.ax2.text(len(paths)-1, avg_path, 
+                             f'Avg: {avg_path:.1f}', 
+                             fontsize=8, color=colors[algo], ha='right')
 
-        self.ax2.set_title('Path Length Comparison', pad=10, fontsize=10, fontweight='bold')
-        self.ax2.set_ylabel('Path Length (steps)', fontsize=8)
-        self.ax2.set_xlabel('Iteration', fontsize=8)
+        self.ax2.set_title('Path Length Comparison', pad=10, fontsize=12, fontweight='bold')
+        self.ax2.set_ylabel('Path Length (steps)', fontsize=10)
+        self.ax2.set_xlabel('Iteration', fontsize=10)
         self.ax2.grid(True, linestyle='--', alpha=0.7)
         self.ax2.legend(fontsize=8, loc='upper left')
 
-        # Add statistics annotations
-        for algo in self.performance_stats:
-            paths = self.performance_stats[algo]['paths']
-            if paths:
-                avg_path = np.mean(paths)
-                min_path = np.min(paths)
-                self.ax2.text(len(paths)-1, avg_path, 
-                             f'{algo}\nAvg: {avg_path:.1f}\nMin: {min_path}', 
-                             fontsize=7, alpha=0.7)
-
         # Adjust layout
         self.fig.tight_layout(pad=3.0)
-        
-        # Add overall performance summary
-        summary_text = "Performance Summary:\n"
-        for algo in self.performance_stats:
-            times = self.performance_stats[algo]['times']
-            paths = self.performance_stats[algo]['paths']
-            if times and paths:
-                avg_time = np.mean(times)
-                avg_path = np.mean(paths)
-                summary_text += f"\n{algo}:\n"
-                summary_text += f"Avg Time: {avg_time:.4f}s\n"
-                summary_text += f"Avg Path: {avg_path:.1f} steps"
-        
-        # Update the ranking label with summary
-        current_text = self.ranking_label.cget("text")
-        self.ranking_label.config(text=current_text + "\n\n" + summary_text)
 
         # Redraw the figure
         self.fig.canvas.draw()
@@ -632,32 +568,14 @@ class MazeGUI:
         self.draw_maze()
 
     def clear_stats(self):
-        """Clear the rankings and performance stats"""
-        self.rankings.clear()
-        for algo in self.performance_stats:
-            self.performance_stats[algo]['times'].clear()
-            self.performance_stats[algo]['paths'].clear()
-        self.ranking_label.config(text="Ranking by Cost:")
-        self.update_performance_graphs()
-
-    def reset_graphs(self):
-        """Reset only the graphs and performance stats without affecting the maze"""
-        # Clear performance stats
+        """Clear the performance stats"""
         for algo in self.performance_stats:
             self.performance_stats[algo]['times'].clear()
             self.performance_stats[algo]['paths'].clear()
         
-        # Clear rankings
-        self.rankings.clear()
-        
-        # Reset ranking label
-        self.ranking_label.config(text="Ranking by Cost:")
-        
-        # Clear and redraw graphs
+        # Clear the performance graphs
         self.ax1.clear()
         self.ax2.clear()
-        
-        # Set up empty graphs with titles
         self.ax1.set_title('Algorithm Performance Over Time', pad=10, fontsize=10, fontweight='bold')
         self.ax1.set_ylabel('Execution Time (seconds)', fontsize=8)
         self.ax1.set_xlabel('Iteration', fontsize=8)
@@ -708,6 +626,32 @@ class MazeGUI:
                 self.draw_maze()
             else:
                 print("Cannot place start position on a wall!")
+
+    def reset_graphs(self):
+        """Reset only the graphs and performance stats without affecting the maze"""
+        # Clear performance stats
+        for algo in self.performance_stats:
+            self.performance_stats[algo]['times'].clear()
+            self.performance_stats[algo]['paths'].clear()
+        
+        # Clear the performance graphs
+        self.ax1.clear()
+        self.ax2.clear()
+        
+        # Set up empty graphs with titles
+        self.ax1.set_title('Algorithm Performance Over Time', pad=10, fontsize=10, fontweight='bold')
+        self.ax1.set_ylabel('Execution Time (seconds)', fontsize=8)
+        self.ax1.set_xlabel('Iteration', fontsize=8)
+        self.ax1.grid(True, linestyle='--', alpha=0.7)
+        
+        self.ax2.set_title('Path Length Comparison', pad=10, fontsize=10, fontweight='bold')
+        self.ax2.set_ylabel('Path Length (steps)', fontsize=8)
+        self.ax2.set_xlabel('Iteration', fontsize=8)
+        self.ax2.grid(True, linestyle='--', alpha=0.7)
+        
+        # Adjust layout and redraw
+        self.fig.tight_layout(pad=3.0)
+        self.fig.canvas.draw()
 
 if __name__ == "__main__":
     root = tk.Tk()
